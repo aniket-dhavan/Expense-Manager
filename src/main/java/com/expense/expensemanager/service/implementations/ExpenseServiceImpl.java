@@ -3,8 +3,10 @@ package com.expense.expensemanager.service.implementations;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import java.time.temporal.TemporalAdjusters;
@@ -100,14 +102,14 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         Map<String, Double> profitAndLoss = new HashMap<>();
 
-        List<Profit> profits=user.getProfit();
+        List<Profit> profits = user.getProfit();
 
-        for(Profit profit:profits){
+        for (Profit profit : profits) {
             // If profit is already calculated for this month
-            if(profit.getDate().equals(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())){
-                 
-                profitAndLoss.put("profit", expenseRepository.getProfitByDate(profit.getDate(),user.getId()));
-                profitAndLoss.put("loss", expenseRepository.getLossByDate(profit.getDate(),user.getId()));
+            if (profit.getDate().equals(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())) {
+
+                profitAndLoss.put("profit", expenseRepository.getProfitByDate(profit.getDate(), user.getId()));
+                profitAndLoss.put("loss", expenseRepository.getLossByDate(profit.getDate(), user.getId()));
                 return profitAndLoss;
             }
         }
@@ -165,29 +167,28 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         Integer year = LocalDate.now().getYear();
 
-        String FILE_PATH=user.getName() + "-" + month + "-" + year.toString()+".csv";
+        String FILE_PATH = "reports/"+user.getName().toUpperCase() + "-" + month + "-" + year.toString() + ".csv";
 
-        addExpensesToCSV(user.getExpense(),FILE_PATH,profitAndLoss );
-        
+        addExpensesToCSV(user.getExpense(), FILE_PATH, profitAndLoss, user);
 
     }
 
-    private void addExpensesToCSV(Set<Expense> expenses, String FILE_PATH,Map<String, Double> profitAndLoss) throws IOException {
+    private void addExpensesToCSV(Set<Expense> expenses, String FILE_PATH, Map<String, Double> profitAndLoss, User user)
+            throws IOException {
         try (Writer writer = new FileWriter(FILE_PATH);
                 CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
             csvPrinter.printRecord("Id", "Date", "Amount", "Category");
-        
+            csvPrinter.println();
             for (Expense expense : expenses) {
-                Date date = new Date(expense.getDate());
+                LocalDate date = Instant.ofEpochMilli(expense.getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
                 csvPrinter.printRecord(expense.getId(), date, expense.getAmount(), expense.getCategory());
             }
-                csvPrinter.printRecord("Profit", "Loss");
-                csvPrinter.printRecord(profitAndLoss.get("profit"), profitAndLoss.get("loss"));
-           
+            csvPrinter.println();
+            csvPrinter.printRecord("Profit", "Loss");
+
+            csvPrinter.printRecord(profitAndLoss.get("profit"), profitAndLoss.get("loss"));
 
         }
     }
-
-    
 
 }

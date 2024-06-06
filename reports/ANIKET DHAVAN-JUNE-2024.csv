@@ -1,0 +1,8 @@
+Id,Date,Amount,Category
+
+1,2024-06-06,1200.0,utilities
+3,2024-06-06,500.0,food
+2,2024-06-06,3000.0,shopping
+
+Profit,Loss,Total Budget
+8300.0,0.0,0.0

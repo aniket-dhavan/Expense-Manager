@@ -1,0 +1,8 @@
+Id,Date,Amount,Category
+
+7,2024-06-06,300.0,food
+8,2024-06-06,31000.0,medical
+6,2024-06-06,5000.0,shpping
+
+Profit,Loss,Total Budget
+0.0,-11300.0,0.0
