@@ -163,17 +163,25 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     public void generateReport(User user, Map<String, Double> profitAndLoss) throws IOException {
 
-        Month month = LocalDate.now().getMonth();
+        Month month = LocalDate.now().getMonth().minus(1);
 
         Integer year = LocalDate.now().getYear();
+        
+        Long startDate = LocalDate.of(year, month, 1).with(TemporalAdjusters.firstDayOfMonth())
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
 
-        String FILE_PATH = "reports/"+user.getName().toUpperCase() + "-" + month + "-" + year.toString() + ".csv";
+        Long endDate = LocalDate.of(year, month, 1).with(TemporalAdjusters.lastDayOfMonth())
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
 
-        addExpensesToCSV(user.getExpense(), FILE_PATH, profitAndLoss, user);
+        String FILE_PATH = "reports/" + user.getName().toUpperCase() + "-" + month + "-" + year.toString() + ".csv";
+
+        addExpensesToCSV(expenseRepository.getExpensesByMonth(user.getId(), startDate, endDate), FILE_PATH, profitAndLoss,
+                user);
 
     }
 
-    private void addExpensesToCSV(Set<Expense> expenses, String FILE_PATH, Map<String, Double> profitAndLoss, User user)
+    private void addExpensesToCSV(List<Expense> expenses, String FILE_PATH, Map<String, Double> profitAndLoss,
+            User user)
             throws IOException {
         try (Writer writer = new FileWriter(FILE_PATH);
                 CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
