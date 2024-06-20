@@ -18,7 +18,6 @@ import org.apache.logging.slf4j.SLF4JLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +26,7 @@ import com.expense.expensemanager.entity.Expense;
 import com.expense.expensemanager.entity.User;
 import com.expense.expensemanager.exceptions.BudgetNotSetException;
 import com.expense.expensemanager.exceptions.UserNotFoundException;
+import com.expense.expensemanager.repository.BudgetRepository;
 import com.expense.expensemanager.repository.ExpenseRepository;
 import com.expense.expensemanager.repository.UserRepository;
 import com.expense.expensemanager.service.interfaces.BudgetService;
@@ -43,6 +43,9 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Autowired
     private BudgetService budgetService;
+
+    @Autowired 
+    private BudgetRepository budgetRepository;
 
     private final Logger LOGGER = LoggerFactory.getLogger(SLF4JLogger.class);
 
@@ -119,14 +122,16 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         if(userBudget.isPresent()){
             Double profit=calculateProfit(userBudget.get());
+            userBudget.get().setProfit(profit);
             Double loss=calculateLoss(userBudget.get());
+            userBudget.get().setLoss(loss);
 
             profitAndLoss.put("loss", loss);
             profitAndLoss.put("profit", profit);
         }
 
-    
-        userRepository.save(user);
+        budgetRepository.save(userBudget.get());
+        
         return profitAndLoss;
     }
 

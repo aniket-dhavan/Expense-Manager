@@ -35,7 +35,6 @@ public class BudgetScheduler {
             for(User user:allUsers){
                 Map<String,Double>profitAndLoss=expenseService.calculateProfitAndLoss(user);
                 expenseService.generateReport(user,profitAndLoss);
-                userService.resetBudget(user);
             }
         }
     }

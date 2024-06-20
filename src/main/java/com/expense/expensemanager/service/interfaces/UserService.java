@@ -15,7 +15,7 @@ public interface UserService {
 
     public String deleteUser(Long userId);
 
-    public void resetBudget(User user);
+   
 
     public String setBudget(Long userId,Budget budget);
 

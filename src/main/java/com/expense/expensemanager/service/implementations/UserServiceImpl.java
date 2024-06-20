@@ -67,10 +67,6 @@ public class UserServiceImpl implements UserService {
     throw new UserNotFoundException("User Not Found For Given Id");
   }
 
-  @Override
-  public void resetBudget(User user) {
-
-  }
 
   @Override
   @Transactional
