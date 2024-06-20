@@ -9,6 +9,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.expense.expensemanager.exceptions.BudgetNotSetException;
+import com.expense.expensemanager.exceptions.MissingValueException;
 import com.expense.expensemanager.exceptions.UserNotFoundException;
 @ControllerAdvice
 @ResponseStatus
@@ -23,12 +24,17 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     }
 
     @ExceptionHandler(BudgetNotSetException.class)
-
     public ResponseEntity<ErrorMessage> budgetNotsetException(BudgetNotSetException exception,WebRequest request){
         ErrorMessage message=new ErrorMessage(HttpStatus.FAILED_DEPENDENCY,exception.getMessage());
 
         return ResponseEntity.status(HttpStatus.FAILED_DEPENDENCY).body(message);
     }
 
+    @ExceptionHandler(MissingValueException.class)
+    public ResponseEntity<ErrorMessage> missingValueException(MissingValueException exception,WebRequest request){
+        ErrorMessage message=new ErrorMessage(HttpStatus.FAILED_DEPENDENCY,exception.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FAILED_DEPENDENCY).body(message);
+    }
     
 }

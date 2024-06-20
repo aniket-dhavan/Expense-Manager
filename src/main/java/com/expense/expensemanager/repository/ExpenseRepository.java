@@ -19,16 +19,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
   public List<Expense> getExpensesByMonth(@Param("userId") Long userId, @Param("startDate") Long startDate,
       @Param("endDate") Long endDate);
 
-  @Query(
-    value = "SELECT p.total_profit FROM profit p where p.date=:date and p.user_id=:userId LIMIT 1",
-    nativeQuery = true
-  )
-    public Double getProfitByDate(@Param("date")Long date,@Param("userId") Long userId); 
-    @Query(
-      value = "SELECT l.total_loss FROM loss l where l.date=:date AND l.user_id=:userId LIMIT 1",
-      nativeQuery = true
-    )
-      public Double getLossByDate(@Param("date")Long date,@Param("userId") Long userId); 
+
 
 }
 

@@ -8,20 +8,26 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Loss {
+public class Budget {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     private Long date;
 
+    private Double totalBudget;
+
+    private Double remainingBudget;
+
+    private Double profit;
+
+    private Double loss;
+
     private Long userId;
 
-
-    private Double totalLoss;
 }

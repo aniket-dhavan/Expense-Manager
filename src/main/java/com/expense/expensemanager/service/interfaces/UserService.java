@@ -1,12 +1,15 @@
 package com.expense.expensemanager.service.interfaces;
 
+
 import java.util.List;
 
+import com.expense.expensemanager.entity.Budget;
 import com.expense.expensemanager.entity.User;
+import com.expense.expensemanager.exceptions.MissingValueException;
 import com.expense.expensemanager.exceptions.UserNotFoundException;
 
 public interface UserService {
-    public User createUser(User user);
+    public User createUser(User user) throws MissingValueException;
 
     public User updateUser(Long userId,User user) throws UserNotFoundException;
 
@@ -14,7 +17,7 @@ public interface UserService {
 
     public void resetBudget(User user);
 
-    public String setBudget(Long userId,Double budget);
+    public String setBudget(Long userId,Budget budget);
 
     public User getUserDetails(Long userId);
 

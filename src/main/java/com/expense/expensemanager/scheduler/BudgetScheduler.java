@@ -29,7 +29,7 @@ public class BudgetScheduler {
     @Scheduled(fixedRate = 1,timeUnit = TimeUnit.DAYS)
     public void resetBudget() throws IOException{
     
-        if(LocalDate.now().getDayOfMonth()==6){
+        if(LocalDate.now().getDayOfMonth()==20){
             List<User> allUsers=userService.getAllUsers();
 
             for(User user:allUsers){

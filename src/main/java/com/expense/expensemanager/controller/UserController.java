@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.expense.expensemanager.entity.Budget;
 import com.expense.expensemanager.entity.User;
+import com.expense.expensemanager.exceptions.MissingValueException;
 import com.expense.expensemanager.exceptions.UserNotFoundException;
 import com.expense.expensemanager.service.interfaces.UserService;
 
@@ -27,7 +29,7 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/user")
-    public ResponseEntity<User> createUser(@RequestBody User user){
+    public ResponseEntity<User> createUser(@RequestBody User user) throws MissingValueException{
         return ResponseEntity.ok().body(userService.createUser(user));
     }
 
@@ -41,8 +43,8 @@ public class UserController {
         return ResponseEntity.ok().body(userService.deleteUser(userId));
     }
 
-    @PutMapping("user/set-budget/{userId}/{budget}")
-    public ResponseEntity<String> setBudget(@PathVariable("userId") Long userId,@PathVariable("budget") Double budget ){
+    @PutMapping("user/set-budget/{userId}")
+    public ResponseEntity<String> setBudget(@PathVariable("userId") Long userId,@RequestBody Budget budget ){
         return ResponseEntity.ok().body(userService.setBudget(userId, budget));
     }
 

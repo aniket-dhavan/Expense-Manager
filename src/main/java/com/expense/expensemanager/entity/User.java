@@ -1,7 +1,5 @@
 package com.expense.expensemanager.entity;
 
-
-import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
@@ -29,19 +27,10 @@ public class User {
 
     private String name;
 
-    private Double budget;
-
-    private double remainingBudget;
-
-    private Boolean budgetSet;
-
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Expense> expense;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Profit> profit;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Loss> loss;
+    private Set<Budget> budget;
 
 }

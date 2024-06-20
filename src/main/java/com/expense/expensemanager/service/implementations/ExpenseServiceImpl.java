@@ -18,17 +18,18 @@ import org.apache.logging.slf4j.SLF4JLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.expense.expensemanager.entity.Budget;
 import com.expense.expensemanager.entity.Expense;
-import com.expense.expensemanager.entity.Loss;
-import com.expense.expensemanager.entity.Profit;
 import com.expense.expensemanager.entity.User;
 import com.expense.expensemanager.exceptions.BudgetNotSetException;
 import com.expense.expensemanager.exceptions.UserNotFoundException;
 import com.expense.expensemanager.repository.ExpenseRepository;
 import com.expense.expensemanager.repository.UserRepository;
+import com.expense.expensemanager.service.interfaces.BudgetService;
 import com.expense.expensemanager.service.interfaces.ExpenseService;
 
 @Service
@@ -40,15 +41,23 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private BudgetService budgetService;
+
     private final Logger LOGGER = LoggerFactory.getLogger(SLF4JLogger.class);
 
+    @Transactional
     public Expense addExpense(Long userId, Expense expense) throws BudgetNotSetException {
 
         Optional<User> user = userRepository.findById(userId);
 
+        LocalDate date = LocalDate.now();
+
         if (user.isPresent()) {
 
-            if (user.get().getBudgetSet() == false) {
+            Optional<Budget> userBudget = budgetService.getBudgetOfMonth(userId, date);
+
+            if (!userBudget.isPresent()) {
                 throw new BudgetNotSetException("Please set budget before adding expenses");
             }
             expense.setDate(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
@@ -59,9 +68,9 @@ public class ExpenseServiceImpl implements ExpenseService {
 
             expenseList.add(expense);
 
-            user.get().setRemainingBudget(user.get().getRemainingBudget() - expense.getAmount());
+            userBudget.get().setRemainingBudget(userBudget.get().getRemainingBudget() - expense.getAmount());
 
-            if (user.get().getRemainingBudget() < 0) {
+            if (userBudget.get().getRemainingBudget() < 0) {
                 LOGGER.info("Budget exceeds");
             }
             userRepository.save(user.get());
@@ -98,75 +107,51 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
+    @Transactional
     public Map<String, Double> calculateProfitAndLoss(User user) {
+
+        LocalDate date=LocalDate.now();
 
         Map<String, Double> profitAndLoss = new HashMap<>();
 
-        List<Profit> profits = user.getProfit();
 
-        for (Profit profit : profits) {
-            // If profit is already calculated for this month
-            if (profit.getDate().equals(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())) {
+        Optional<Budget> userBudget=budgetService.getBudgetOfMonth(user.getId(), date);
 
-                profitAndLoss.put("profit", expenseRepository.getProfitByDate(profit.getDate(), user.getId()));
-                profitAndLoss.put("loss", expenseRepository.getLossByDate(profit.getDate(), user.getId()));
-                return profitAndLoss;
-            }
+        if(userBudget.isPresent()){
+            Double profit=calculateProfit(userBudget.get());
+            Double loss=calculateLoss(userBudget.get());
+
+            profitAndLoss.put("loss", loss);
+            profitAndLoss.put("profit", profit);
         }
 
-        if (user.getBudgetSet() == false) {
-            return profitAndLoss;
-        }
-        Profit profit = new Profit();
-
-        profit.setDate(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
-        Double profitOfMonth = calculateProfit(user);
-        profit.setTotalProfit(profitOfMonth);
-
-        profit.setUserId(user.getId());
-        user.getProfit().add(profit);
-
-        Loss loss = new Loss();
-
-        loss.setDate(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
-
-        Double lossOfMonth = calculateLoss(user);
-
-        loss.setTotalLoss(lossOfMonth);
-
-        loss.setUserId(user.getId());
-        user.getLoss().add(loss);
-
+    
         userRepository.save(user);
-
-        profitAndLoss.put("profit", profitOfMonth);
-        profitAndLoss.put("loss", lossOfMonth);
-
         return profitAndLoss;
     }
 
-    private double calculateProfit(User user) {
-        if (user.getRemainingBudget() <= 0) {
+    private double calculateProfit(Budget budget) {
+        if (budget.getRemainingBudget() <= 0) {
             return 0.0;
         }
 
-        return user.getRemainingBudget();
+        return budget.getRemainingBudget();
     }
 
-    private double calculateLoss(User user) {
-        if (user.getRemainingBudget() >= 0) {
+    private double calculateLoss(Budget budget) {
+        if (budget.getRemainingBudget() >= 0) {
             return 0.0;
         }
 
-        return user.getRemainingBudget();
+        return budget.getRemainingBudget();
     }
 
     public void generateReport(User user, Map<String, Double> profitAndLoss) throws IOException {
 
-        Month month = LocalDate.now().getMonth().minus(1);
+        Month month = LocalDate.now().getMonth();
 
         Integer year = LocalDate.now().getYear();
-        
+
         Long startDate = LocalDate.of(year, month, 1).with(TemporalAdjusters.firstDayOfMonth())
                 .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
 
@@ -175,7 +160,8 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         String FILE_PATH = "reports/" + user.getName().toUpperCase() + "-" + month + "-" + year.toString() + ".csv";
 
-        addExpensesToCSV(expenseRepository.getExpensesByMonth(user.getId(), startDate, endDate), FILE_PATH, profitAndLoss,
+        addExpensesToCSV(expenseRepository.getExpensesByMonth(user.getId(), startDate, endDate), FILE_PATH,
+                profitAndLoss,
                 user);
 
     }
@@ -185,16 +171,20 @@ public class ExpenseServiceImpl implements ExpenseService {
             throws IOException {
         try (Writer writer = new FileWriter(FILE_PATH);
                 CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-            csvPrinter.printRecord("Id", "Date", "Amount", "Category");
+            csvPrinter.printRecord("Date", "Amount", "Category");
             csvPrinter.println();
             for (Expense expense : expenses) {
                 LocalDate date = Instant.ofEpochMilli(expense.getDate()).atZone(ZoneId.systemDefault()).toLocalDate();
-                csvPrinter.printRecord(expense.getId(), date, expense.getAmount(), expense.getCategory());
+                csvPrinter.printRecord( date, expense.getAmount(), expense.getCategory());
             }
+            LocalDate date=LocalDate.now();
+            Optional<Budget> userBudget=budgetService.getBudgetOfMonth(user.getId(), date);
             csvPrinter.println();
-            csvPrinter.printRecord("Profit", "Loss");
+            csvPrinter.printRecord("Profit", "Loss", "Total Budget");
 
-            csvPrinter.printRecord(profitAndLoss.get("profit"), profitAndLoss.get("loss"));
+
+
+            csvPrinter.printRecord(profitAndLoss.get("profit"), profitAndLoss.get("loss"),userBudget.get().getTotalBudget());
 
         }
     }
